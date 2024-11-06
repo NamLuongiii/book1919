@@ -14,8 +14,8 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Tủ sách",
-  description: "Đọc sách Việt Nam",
+  // title: "Tủ sách",
+  // description: "Đọc sách Việt Nam",
 };
 
 export default function RootLayout({
@@ -26,6 +26,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
+        suppressHydrationWarning={false}
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         {children}
