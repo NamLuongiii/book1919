@@ -1,10 +1,18 @@
 "use client";
 
-import { Button, Modal, ModalTitle } from "@/ui";
+import { Button, ButtonIcon, Modal, ModalTitle } from "@/ui";
 import clsx from "clsx";
 import Epub, { Book } from "epubjs";
 import Navigation, { NavItem } from "epubjs/types/navigation";
-import { createContext, useContext, useEffect, useRef, useState } from "react";
+import Image from "next/image";
+import {
+  createContext,
+  ReactNode,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 
 interface ReaderProgramContext {
   book: Book;
@@ -17,6 +25,7 @@ export default function Home() {
   const [open, setOpen] = useState(false);
 
   const [config, setConfig] = useState<ReaderProgramContext>();
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     // Load the opf
@@ -30,7 +39,10 @@ export default function Home() {
 
     rendition.themes.fontSize("140%");
 
-    // var displayed = rendition.display(3);
+    var displayed = rendition.display(3).then(() => {
+      const show_guide = localStorage.getItem("guide");
+      if (show_guide != "false") setMounted(true);
+    });
 
     // Navigation loaded
     book.loaded.navigation.then(function (nav) {
@@ -111,19 +123,32 @@ export default function Home() {
   return (
     <context.Provider value={config}>
       <div>
-        <div id="viewer"></div>
-        <Button id="button-open" onClick={(e) => setOpen(true)}>
-          open
-        </Button>
+        <div id="viewer" className="*:!overflow-x-hidden"></div>
+        <ButtonIcon
+          id="button-open"
+          className="fixed right-4 bottom-6"
+          onClick={(e) => setOpen(true)}
+          icon="menu"
+        />
+
+        <footer className="text-center space-x-4 py-6">
+          <Button onClick={(e) => config?.book.rendition.prev()}>
+            Chương cũ
+          </Button>
+          <Button onClick={(e) => config?.book.rendition.next()}>
+            Chương mới
+          </Button>
+        </footer>
+
         <Modal open={open} onChange={setOpen}>
           <ModalTitle>Navigation</ModalTitle>
-          <div className="h-[700px] w-[600px]  overflow-auto">
+          <div className="h-[500px] w-[600px]  overflow-auto">
             {config?.navigation.toc.map((item) => (
               <TableItem key={item.id} toc={item} />
             ))}
           </div>
         </Modal>
-        <UiGuide />
+        {mounted && <UiGuide />}
       </div>
     </context.Provider>
   );
@@ -150,50 +175,115 @@ const TableItem = ({ toc }: { toc: NavItem }) => {
 };
 
 const UiGuide = () => {
-  const [visible, setVisible] = useState(false);
+  const [visible, setVisible] = useState(true);
   const ref = useRef<HTMLDivElement>(null);
 
-  console.log(visible);
+  const [index, setIndex] = useState(1);
 
-  const guide = () => {
-    setVisible(true);
+  const step_1 = () => {
     const btn = document.getElementById("button-open");
     if (!btn) return;
 
-    btn?.classList.add("relative");
-    btn?.classList.add("z-50");
-
     const target_bound = btn?.getBoundingClientRect();
 
-    const circle = ref.current;
-    const size = Math.max(target_bound.width, target_bound.height) * 2;
-    const _style = circle!.style;
+    const copy_btn = btn?.cloneNode(true);
 
-    _style.width = `${size}px`;
-    _style.height = `${size}px`;
-    _style.display = `block`;
-    _style.position = "fixed";
-    _style.top = `${target_bound.top}px`;
-    _style.left = `${target_bound.left}px`;
+    const container = ref.current;
+    if (!container) return;
+
+    const _copy_node = container.appendChild(copy_btn) as HTMLElement;
+
+    _copy_node?.classList.add("fixed");
+    _copy_node?.classList.add("z-50");
+    _copy_node.style.top = `${target_bound.top}px`;
+    _copy_node.style.left = `${target_bound.left}px`;
+    _copy_node.style.scale = `1.2`;
+    _copy_node.style.outline = `4px solid #fff`;
+    _copy_node.style.outlineOffset = `2px`;
+
+    _copy_node.onclick = () => {
+      setIndex(2);
+    };
+    // copy_btn?.classList.add("pointer-events-none");
   };
 
+  const step_2 = () => {
+    setIndex(3);
+  };
+
+  const step_3 = () => {
+    setVisible(false);
+  };
+
+  useEffect(() => {
+    step_1();
+  });
+
+  const Message = (message: string) => (
+    <div className=" bg-white rounded text-lg p-4">{message}</div>
+  );
+
+  const handleSubmit = (e: any) => {
+    e.preventDefault();
+    localStorage.setItem("guide", "false");
+    setVisible(false);
+  };
+
+  if (!visible) return <></>;
+
   return (
-    <div>
-      <span onClick={guide}>UI Guide</span>
-      <div
-        ref={ref}
-        className="hidden bg-white rounded-full relative z-45 opacity-30"
-      ></div>
-      <div
-        className={clsx(
-          "fixed inset-0 bg-gray-700 opacity-40 hidden",
-          visible && "!block"
-        )}
-        onClick={(e) => {
-          e.preventDefault();
-          setVisible(false);
-        }}
-      ></div>
+    <div ref={ref}>
+      {index === 1 && (
+        <AlignCenter>
+          {Message("Nhấn vào button màu xanh để mở mục lục")}
+          <form
+            className="bg-white"
+            onSubmit={handleSubmit}
+            onChange={handleSubmit}
+          >
+            <label htmlFor="turn-off-guide">
+              Không hiển thị phần hướng dẫn nữa!
+            </label>
+            <input type="checkbox" id="turn-off-guide" />
+          </form>
+        </AlignCenter>
+      )}
+      {index === 2 && (
+        <AlignCenter>
+          <Image
+            src="/table-of-content.png"
+            width={400}
+            height={600}
+            alt="toc"
+          />
+          {Message("Làm tốt lắm")}
+          <Button onClick={step_2}>Tiếp tục</Button>
+        </AlignCenter>
+      )}
+
+      {index === 3 && (
+        <AlignCenter>
+          <Image
+            src="/table-of-content.png"
+            width={400}
+            height={600}
+            alt="toc"
+          />
+          {Message("Để thay đổi font chữ chọn Tab [Hiển thị]")}
+          {Message("Chọn Tab [Shortcuts] để xem các phím tắt được hỗ trợ ")}
+          <Button onClick={step_3}>Hoàn thành</Button>
+        </AlignCenter>
+      )}
+
+      <div className={clsx("fixed inset-0 bg-gray-700 opacity-40")}></div>
+    </div>
+  );
+};
+
+const AlignCenter = ({ children }: { children: ReactNode }) => {
+  return (
+    <div className="fixed z-50 top-1/2 left-1/2 translate-x-[-50%] translate-y-[-50%]">
+      {children}
     </div>
   );
 };
