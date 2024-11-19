@@ -19,3 +19,20 @@ body {
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+form > * {
+  margin-bottom: 16px;
+}
+
+input {
+  display: block;
+}
+
+input[type="text"] {
+  border: 1px solid;
+}
+
+button {
+  border: 1px solid;
+  padding: 0 16px;
+}
