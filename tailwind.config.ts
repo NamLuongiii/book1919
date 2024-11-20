@@ -12,6 +12,8 @@ const config: Config = {
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
+        "text-secondary": "var(--text-secondary)",
+        active: "var(--active)",
       },
     },
   },

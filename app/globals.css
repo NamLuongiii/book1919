@@ -5,12 +5,16 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --text-secondary: #383838;
+  --active: rgb(35, 35, 252);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+    --text-secondary: #383838;
+    --active: rgb(35, 35, 252);
   }
 }
 
@@ -30,9 +34,37 @@ input {
 
 input[type="text"] {
   border: 1px solid;
+  padding: 4px;
+  outline: none;
+}
+
+input[type="text"]:focus {
+  border: 1px solid;
+  padding: 4px;
+  border-color: var(--active);
 }
 
 button {
   border: 1px solid;
-  padding: 0 16px;
+  padding: 4px 16px;
+}
+
+.file-input {
+  width: fit-content;
+  min-width: 300px;
+  border: 1px dashed;
+  color: var(--text-secondary);
+  display: flex;
+  flex-direction: column;
+}
+
+.text-input {
+  position: relative;
+  width: fit-content;
+}
+
+.text-input-remain {
+  color: var(--text-secondary);
+  font-size: x-small;
+  float: right;
 }

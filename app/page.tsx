@@ -1,3 +1,7 @@
+import { Button } from "@/ui";
+import { FileInput } from "@/ui/file-input";
+import { TextInput } from "@/ui/text-input";
+
 export interface Props {}
 
 export default function Home(props: Props) {
@@ -6,25 +10,37 @@ export default function Home(props: Props) {
       <form action="/api" method="post" encType="multipart/form-data">
         <fieldset>
           <label htmlFor="img">Cover</label>
-          <input type="file" name="img" id="img" required multiple={false} />
+          <FileInput
+            type="file"
+            name="img"
+            id="img"
+            required
+            multiple={false}
+            maxMb={5}
+            accept={{
+              "image/jpeg": [".jpeg", ".jpg"],
+              "image/png": [".png"],
+            }}
+          />
         </fieldset>
         <fieldset>
           <label htmlFor="name">Name</label>
-          <input type="text" name="name" id="name" required maxLength={256} />
+          <TextInput name="name" id="name" maxLength={256} />
         </fieldset>
 
         <fieldset>
           <label htmlFor="source">Source</label>
-          <input
+          <FileInput
             type="file"
             name="source"
             id="source"
             required
             multiple={false}
+            maxMb={300}
           />
         </fieldset>
 
-        <button type="submit">Submit</button>
+        <Button type="submit">Submit</Button>
       </form>
     </div>
   );

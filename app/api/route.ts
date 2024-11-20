@@ -1,6 +1,9 @@
+import { bucket, db, uploadFile } from "@/lib/firebase";
+import { getDownloadURL } from "firebase-admin/storage";
 import fs from "fs";
 import path from "path";
 import sharp from "sharp";
+import { v4 as uuidv4 } from "uuid";
 
 export async function GET(request: Request) {
   const public_path = path.join(process.cwd(), "/public");
@@ -30,36 +33,49 @@ export async function POST(request: Request) {
   try {
     const form = await request.formData();
 
-    await new Promise((rel, rej) => {
-      setTimeout(() => {
-        rel(null);
-      }, 2000);
-    });
-
     const img = form.get("img");
+    const name = form.get("name");
+    const source = form.get("source");
 
-    if (img) {
-      const file = img as File;
-      const array_buffer = await file.arrayBuffer();
-      const buffer = Buffer.from(array_buffer);
+    if (!img || !name || !source) throw new Error("400 error");
 
-      await Promise.all([
-        sharp(buffer)
-          .resize(50)
-          .toFile(path.join(process.cwd(), "public", `50_${file.name}`)),
-        sharp(buffer)
-          .resize(100)
-          .toFile(path.join(process.cwd(), "public", `100_${file.name}`)),
-      ]);
+    // progressing file
+    const file = img as File;
+    const urls = await Promise.all([
+      resizeAndUploadImage(file, 200, 300),
+      resizeAndUploadImage(file, 60, 90),
+      uploadFile(source as File),
+    ]);
 
-      await fs.promises.writeFile(
-        path.join(process.cwd(), "public", file.name),
-        buffer
-      );
-    }
+    const source_object: Source = {
+      name: name as string,
+      source: urls[2],
+      image_200x300: urls[0],
+      image_60x90: urls[1],
+    };
 
-    return new Response("hello world");
-  } catch (error) {
-    return new Response(JSON.stringify(error));
+    await db.collection("sources").add(source_object);
+
+    const data = { message: "Create successfully" };
+    return new Response(JSON.stringify(data), {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+  } catch (error: any) {
+    return new Response(JSON.stringify({ message: error.message }));
   }
 }
+
+const resizeAndUploadImage = async (file: File, w: number, h: number) => {
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const to_buffer = await sharp(buffer)
+    .resize(w, h, { fit: "contain" })
+    .toBuffer();
+
+  const gen_name = `${w}x${h}_${uuidv4()}_${file.name.replaceAll(" ", "_")}`;
+
+  const _file = bucket.file(gen_name);
+  await _file.save(to_buffer);
+  return getDownloadURL(_file);
+};
