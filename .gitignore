@@ -39,5 +39,5 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-./lib/fb-key.json
+/lib/fb-key.json
 yarn.lock
