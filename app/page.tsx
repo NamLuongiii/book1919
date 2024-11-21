@@ -10,6 +10,9 @@ export default function Home(props: Props) {
       <form action="/api" method="post" encType="multipart/form-data">
         <fieldset>
           <label htmlFor="img">Cover</label>
+          <p>
+            <small>Expect ratio: 1:1.5</small>
+          </p>
           <FileInput
             type="file"
             name="img"

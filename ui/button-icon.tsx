@@ -16,7 +16,7 @@ const ButtonIcon = forwardRef<HTMLButtonElement, Props>(
         ref={ref}
         className={clsx(
           props.className,
-          "rounded-full border shadow p-2 bg-white flex items-center justify-center"
+          "p-1 flex items-center justify-center hover:bg-gray-200 active:bg-gray-300"
         )}
       >
         <Icon icon={icon} />

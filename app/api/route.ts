@@ -1,9 +1,11 @@
 import { bucket, db, uploadFile } from "@/lib/firebase";
+import { FieldValue } from "firebase-admin/firestore";
 import { getDownloadURL } from "firebase-admin/storage";
 import fs from "fs";
 import path from "path";
 import sharp from "sharp";
 import { v4 as uuidv4 } from "uuid";
+import { Source } from "./documents/source";
 
 export async function GET(request: Request) {
   const public_path = path.join(process.cwd(), "/public");
@@ -52,6 +54,7 @@ export async function POST(request: Request) {
       source: urls[2],
       image_200x300: urls[0],
       image_60x90: urls[1],
+      createdAt: FieldValue.serverTimestamp(),
     };
 
     await db.collection("sources").add(source_object);

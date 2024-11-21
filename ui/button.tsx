@@ -6,7 +6,11 @@ type Props = ButtonProps & {};
 
 const Button = forwardRef<HTMLButtonElement, Props>((props, ref) => {
   return (
-    <_Button {...props} ref={ref} className={clsx("rounded", props.className)}>
+    <_Button
+      {...props}
+      ref={ref}
+      className={clsx("border border-foreground px-2", props.className)}
+    >
       {props.children}
     </_Button>
   );
