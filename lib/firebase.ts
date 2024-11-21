@@ -3,11 +3,9 @@
 import admin from "firebase-admin";
 import { getFirestore } from "firebase-admin/firestore";
 import { getDownloadURL, getStorage } from "firebase-admin/storage";
-var serviceAccount = require("./fb-key.json");
 
 if (!admin.app.length)
   admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
     storageBucket: "gs://app-2024-63e00.firebasestorage.app",
   });
 
