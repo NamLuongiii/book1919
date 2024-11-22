@@ -19,7 +19,7 @@ const ButtonIcon = forwardRef<HTMLButtonElement, Props>(
           "p-1 flex items-center justify-center hover:bg-gray-200 active:bg-gray-300"
         )}
       >
-        <Icon icon={icon} />
+        <Icon icon={icon} color={props.disabled ? "#d1d5db" : undefined} />
       </_Button>
     );
   }

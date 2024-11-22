@@ -80,13 +80,17 @@ input[type="number"]:focus {
 }
 
 table {
-  width: 100%;
   table-layout: fixed;
   border-collapse: collapse;
 }
 
 table th {
-  min-width: 100px;
+  min-width: 200px;
+  width: fit-content;
+}
+
+table th > * {
+  min-width: inherit;
 }
 
 table,
@@ -103,4 +107,48 @@ table thead tr {
 table tbody td {
   overflow: hidden;
   word-break: break-all;
+}
+
+.sticky-header {
+  position: sticky;
+  z-index: 1;
+  top: 0%;
+  border: 1px solid;
+  background-color: white;
+}
+
+.table-pagination {
+  width: fit-content;
+  display: grid;
+  grid-template-areas:
+    "item1 item3 item4 item5"
+    "item2 item3 item4 item5"
+    "item6 item3 item4 item5";
+  column-gap: 8px;
+}
+
+.table-pagination > * {
+  display: block;
+}
+
+.item1 {
+  grid-area: item1;
+}
+
+.item2 {
+  grid-area: item2;
+}
+.item3 {
+  grid-area: item3;
+}
+.item4 {
+  grid-area: item4;
+}
+
+.item5 {
+  grid-area: item5;
+}
+
+.item6 {
+  grid-area: item6;
 }

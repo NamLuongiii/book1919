@@ -1,4 +1,9 @@
-export type IIcons = "menu" | "mouse-pointer-click" | "home";
+export type IIcons =
+  | "menu"
+  | "mouse-pointer-click"
+  | "home"
+  | "arrow-long-left"
+  | "arrow-long-right";
 
 interface Props {
   icon: IIcons;
@@ -62,6 +67,43 @@ const Icon = ({ icon, color = "#000" }: Props) => {
           />
         </svg>
       );
+      break;
+    case "arrow-long-left":
+      _svg = (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          strokeWidth={1.5}
+          stroke={color}
+          className="size-6"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M6.75 15.75 3 12m0 0 3.75-3.75M3 12h18"
+          />
+        </svg>
+      );
+      break;
+    case "arrow-long-right":
+      _svg = (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          strokeWidth={1.5}
+          stroke={color}
+          className="size-6"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3"
+          />
+        </svg>
+      );
+      break;
     default:
       break;
   }
