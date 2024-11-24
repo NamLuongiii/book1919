@@ -110,6 +110,10 @@ export default async function SourceMng({ searchParams }: Props) {
           >
             <ButtonIcon icon="arrow-long-right" disabled={!has_next_page} />
           </Link>
+
+          <Link href="/source/create">
+            <button>Create</button>
+          </Link>
         </div>
 
         <div className="overflow-x-auto">

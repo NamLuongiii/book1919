@@ -1,4 +1,7 @@
+"use client";
+
 import { Popover, PopoverButton, PopoverPanel } from "@headlessui/react";
+import copy from "copy-to-clipboard";
 import Link from "next/link";
 
 interface Props {
@@ -15,7 +18,14 @@ export function Linkable({ href }: Props) {
         anchor="bottom"
         className="flex flex-col bg-white border px-2"
       >
-        <button>Copy</button>
+        <button
+          onClick={(e) => {
+            copy(href ?? "", {});
+            alert("Copy success");
+          }}
+        >
+          Copy
+        </button>
         <Link href={href ?? ""} target="_blank">
           Go
         </Link>

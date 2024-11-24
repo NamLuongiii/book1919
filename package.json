@@ -12,6 +12,7 @@
     "@headlessui/react": "^2.2.0",
     "@types/sharp": "^0.32.0",
     "clsx": "^2.1.1",
+    "copy-to-clipboard": "^3.3.3",
     "epubjs": "^0.3.93",
     "firebase": "^11.0.2",
     "firebase-admin": "^13.0.0",
@@ -20,6 +21,7 @@
     "react": "19.0.0-rc-02c0e824-20241028",
     "react-dom": "19.0.0-rc-02c0e824-20241028",
     "react-dropzone": "^14.3.5",
+    "react-tooltip": "^5.28.0",
     "sharp": "^0.33.5",
     "uuid": "^11.0.3"
   },
