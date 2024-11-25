@@ -160,3 +160,28 @@ table tbody td {
   border: 1px solid;
   margin-bottom: 4px;
 }
+
+.home_section {
+  width: fit-content;
+  display: grid;
+  grid-template-areas:
+    "title title title title"
+    "item item item item";
+  grid-template-columns: repeat(4, 1fr); /* 3 cột bằng nhau */
+  gap: 20px; /* Khoảng cách giữa các mục */
+  padding: 20px 0;
+}
+
+.home_section__title {
+  grid-area: title;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.home_section__item {
+  text-align: center;
+  padding: 10px;
+  background-color: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+}
