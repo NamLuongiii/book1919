@@ -66,14 +66,29 @@ input[type="number"]:focus {
   float: right;
 }
 
-.app-container {
+#app-container {
   max-width: 1000px;
-  margin: 0 auto;
+  margin: 46px auto;
   padding: 0;
 }
 
+#app-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  border: 1px solid;
+  margin-bottom: 4px;
+
+  position: fixed;
+  top: 0;
+  z-index: 10;
+  max-width: 1000px;
+  width: 100%;
+  background-color: white;
+}
+
 @media only screen and (max-width: 1000px) {
-  .app-container {
+  #app-container {
     width: 100%;
     padding: 0 8px;
   }
@@ -153,14 +168,6 @@ table tbody td {
   grid-area: item6;
 }
 
-#app-header {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  border: 1px solid;
-  margin-bottom: 4px;
-}
-
 .home_section {
   width: fit-content;
   display: grid;
@@ -184,4 +191,40 @@ table tbody td {
   background-color: #f9f9f9;
   border: 1px solid #ddd;
   border-radius: 8px;
+}
+
+#search {
+  width: 400px;
+  padding: 0 10px;
+  box-sizing: content-box;
+  border-radius: 8px;
+  background-color: white;
+  transform: translateY(-30px);
+  z-index: 20;
+
+  max-height: 500px;
+  overflow-y: scroll;
+  scrollbar-width: thin;
+}
+
+#search > * {
+  margin-bottom: 12px;
+}
+
+.search_input {
+  height: 30px;
+  box-sizing: border-box;
+  padding: 4px;
+  width: 400px;
+}
+
+#search .search__item {
+  display: flex;
+  align-items: start;
+  gap: 6px;
+  border-radius: 4px;
+}
+
+#search .search__item:hover {
+  background-color: #f0f0f0;
 }

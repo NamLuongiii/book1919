@@ -3,6 +3,7 @@ import { Button } from "@/ui";
 import { FieldPath } from "firebase-admin/firestore";
 import Image from "next/image";
 import { Source } from "../api/documents/source";
+import { ContinueReading } from "./continue";
 
 interface Props {
   searchParams: Promise<{ [key: string]: string }>;
@@ -36,6 +37,7 @@ export default async function ViewScreen({ searchParams }: Props) {
         <Button to_href={"/read?slug=" + source.id} type="button">
           Read
         </Button>
+        <ContinueReading slug={slug} />
       </section>
     </div>
   );

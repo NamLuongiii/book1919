@@ -2,6 +2,7 @@ import { ButtonIcon } from "@/ui";
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import Link from "next/link";
+import { Search } from "./components/search";
 import "./globals.css";
 
 const geistSans = localFont({
@@ -28,19 +29,16 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
+        id="app-container"
         suppressHydrationWarning={false}
-        className={`${geistSans.variable} ${geistMono.variable} antialiased app-container`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased `}
       >
         <header id="app-header">
           <Link href={"/"}>
             <ButtonIcon icon="home" />
           </Link>
-          <Link href={"/source"}>
-            <u>Table data</u>
-          </Link>
-          <Link href={"/read"}>
-            <u>Read</u>
-          </Link>
+
+          <Search />
         </header>
         {children}
       </body>
