@@ -59,7 +59,7 @@ const searchElastic = async (name: string) => {
 
     return data.hits.hits;
   } catch (error) {
-    console.log(error);
+    return error;
   }
 };
 
