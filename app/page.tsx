@@ -2,7 +2,6 @@ import { db } from "@/lib/firebase";
 import Image from "next/image";
 import Link from "next/link";
 import { Source } from "./api/documents/source";
-import BookMe from "./components/book-me";
 
 export interface Props {}
 
@@ -23,8 +22,6 @@ export default async function Home(props: Props) {
 
   return (
     <div>
-      <BookMe />
-
       <section className="home_section">
         <h1 className="home_section__title">
           <strong>Abc list</strong>

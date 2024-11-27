@@ -5,6 +5,9 @@ import { getApps, initializeApp, ServiceAccount } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { getDownloadURL, getStorage } from "firebase-admin/storage";
 
+import * as dotenv from "dotenv";
+dotenv.config();
+
 const serviceAccount = {
   type: "service_account",
   project_id: process.env.FIREBASE_PROJECT_ID,

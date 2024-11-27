@@ -2,11 +2,20 @@
 
 import { Popover, PopoverButton, PopoverPanel } from "@headlessui/react";
 import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import useSWRMutation from "swr/mutation";
-import { Source } from "../api/documents/source";
 
 interface Props {}
+
+interface Hit {
+  _index: string;
+  _id: string;
+  _source: {
+    name: string;
+    image_60x90: string;
+  };
+}
 
 export function Search(props: Props) {
   return (
@@ -32,7 +41,7 @@ export function Search(props: Props) {
 
 const AutoFocus = ({ open }: { open: boolean }) => {
   const ref = useRef<HTMLInputElement>(null);
-  const [sources, setSources] = useState<Source[]>([]);
+  const [sources, setSources] = useState<Hit[]>([]);
   const [mess, setMess] = useState("");
 
   useEffect(() => {
@@ -44,7 +53,7 @@ const AutoFocus = ({ open }: { open: boolean }) => {
     "search",
     async (key, { arg }: { arg: string }) => {
       const res = await fetch("/api/source/search?search=" + arg);
-      const result: Source[] = await res.json();
+      const result: Hit[] = await res.json();
 
       setSources(result);
       if (result.length || arg == "") {
@@ -84,10 +93,19 @@ const AutoFocus = ({ open }: { open: boolean }) => {
       </p>
 
       {sources.map((source) => (
-        <div key={source.id} className="search__item">
-          <Image src={source.image_60x90} alt="book" width={40} height={60} />
-          <p>{source.name}</p>
-        </div>
+        <Link
+          key={source._id}
+          href={"/view?slug=" + source._id}
+          className="search__item"
+        >
+          <Image
+            src={source._source.image_60x90}
+            alt="book"
+            width={40}
+            height={60}
+          />
+          <p>{source._source.name}</p>
+        </Link>
       ))}
     </PopoverPanel>
   );
