@@ -1,3 +1,4 @@
+import { CATEGORIES } from "@/lib/constant";
 import { bucket, db, uploadFile } from "@/lib/firebase";
 import { FieldValue } from "firebase-admin/firestore";
 import { getDownloadURL } from "firebase-admin/storage";
@@ -55,6 +56,7 @@ export async function POST(request: Request) {
       image_200x300: urls[0],
       image_60x90: urls[1],
       createdAt: FieldValue.serverTimestamp(),
+      position: CATEGORIES["Cate A"],
     };
 
     await db.collection("sources").add(source_object);
