@@ -1,3 +1,4 @@
+import { CATEGORIES } from "@/lib/constant";
 import { db } from "@/lib/firebase";
 import Image from "next/image";
 import Link from "next/link";
@@ -21,7 +22,7 @@ export default async function Home(props: Props) {
   );
 
   return (
-    <div>
+    <div id="homepage_layout">
       <section className="home_section">
         <h1 className="home_section__title">
           <strong>Abc list</strong>
@@ -45,6 +46,15 @@ export default async function Home(props: Props) {
           </Link>
         ))}
       </section>
+
+      <nav className="homepage__categories">
+        <h1>Homepage categories</h1>
+        {Object.keys(CATEGORIES).map((category) => (
+          <Link key={category} href={"list?c=" + encodeURIComponent(category)}>
+            {category}
+          </Link>
+        ))}
+      </nav>
     </div>
   );
 }

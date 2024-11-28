@@ -6,7 +6,7 @@ import Epub, { Location, Rendition } from "epubjs";
 import Navigation, { NavItem } from "epubjs/types/navigation";
 import { PackagingMetadataObject } from "epubjs/types/packaging";
 import Section from "epubjs/types/section";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import "./index.css";
 import { storage } from "./storage";
 
@@ -40,6 +40,8 @@ export default function ReadPc({ source, slug }: Props) {
     if (storage_data) {
       rendition.display(storage_data.located?.start.cfi);
     } else rendition.display();
+
+    console.log(rendition);
 
     rendition.on("rendered", (renderer: any) => {
       // -- do stuff
@@ -85,7 +87,7 @@ export default function ReadPc({ source, slug }: Props) {
     next?.addEventListener(
       "click",
       function () {
-        rendition.next();
+        rendition?.next();
       },
       false
     );
@@ -94,7 +96,7 @@ export default function ReadPc({ source, slug }: Props) {
     prev?.addEventListener(
       "click",
       function () {
-        rendition.prev();
+        rendition?.prev();
       },
       false
     );
@@ -102,12 +104,12 @@ export default function ReadPc({ source, slug }: Props) {
     var keyListener = function (e: any) {
       // Left Key
       if ((e.keyCode || e.which) == 37) {
-        rendition.prev();
+        rendition?.prev();
       }
 
       // Right Key
       if ((e.keyCode || e.which) == 39) {
-        rendition.next();
+        rendition?.next();
       }
     };
 
@@ -144,6 +146,40 @@ export default function ReadPc({ source, slug }: Props) {
     });
   };
 
+  // current chapter name
+
+  const currentChapterName = useCallback(
+    (nav?: NavItem) => {
+      if (!nav || !toc) return <></>;
+
+      const findItem = (items: NavItem[], id?: string): any => {
+        for (let i = 0; i < items.length; i++) {
+          const item = items[i];
+
+          if (item.id == id) {
+            return item;
+          }
+
+          const _item = findItem(item.subitems ?? [], id);
+
+          if (_item) return _item;
+        }
+      };
+
+      let parent = findItem(toc.toc, nav.parent);
+
+      return (
+        <div>
+          <small>{!!parent && currentChapterName(parent)}</small>
+          <p>
+            <i>{nav.label}</i>
+          </p>
+        </div>
+      );
+    },
+    [currentNav, toc]
+  );
+
   // caulate percentage
 
   return (
@@ -171,9 +207,7 @@ export default function ReadPc({ source, slug }: Props) {
           </PopoverPanel>
         </Popover>
 
-        <div className="current-nav">
-          <i>{currentNav?.label}</i>
-        </div>
+        <div className="current-nav">{currentChapterName(currentNav)}</div>
       </header>
 
       <div id="book-section">

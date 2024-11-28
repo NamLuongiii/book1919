@@ -3,10 +3,11 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
+  --background: #f5f5f5;
   --foreground: #171717;
   --text-secondary: #383838;
   --active: rgb(35, 35, 252);
+  --border: #ddd;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -15,6 +16,7 @@
     --foreground: #ededed;
     --text-secondary: #383838;
     --active: rgb(35, 35, 252);
+    --border: #f0f0f0;
   }
 }
 
@@ -22,6 +24,7 @@ body {
   color: var(--foreground);
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
+  border-color: var(--border);
 }
 
 form > * {
@@ -76,12 +79,12 @@ input[type="number"]:focus {
   display: flex;
   align-items: center;
   gap: 16px;
-  border: 1px solid;
+  border: 1px solid var(--border);
   margin-bottom: 4px;
 
   position: fixed;
   top: 0;
-  z-index: 10;
+  z-index: 20;
   max-width: 1000px;
   width: 100%;
   background-color: white;
@@ -128,7 +131,7 @@ table tbody td {
   position: sticky;
   z-index: 1;
   top: 0%;
-  border: 1px solid;
+  border: 1px solid var(--border);
   background-color: white;
 }
 
@@ -177,6 +180,7 @@ table tbody td {
   grid-template-columns: repeat(4, 1fr); /* 3 cột bằng nhau */
   gap: 20px; /* Khoảng cách giữa các mục */
   padding: 20px 0;
+  grid-area: item1;
 }
 
 .home_section__title {
@@ -227,4 +231,42 @@ table tbody td {
 
 #search .search__item:hover {
   background-color: #f0f0f0;
+}
+
+#homepage_layout {
+  display: grid;
+  grid-template-areas: "item1 item2" "item1 item2";
+}
+
+#homepage_layout .homepage__categories {
+  grid-area: item2;
+  border: 1px solid var(--border);
+  position: sticky;
+  top: 40px;
+  padding: 8px;
+}
+
+#homepage_layout .homepage__categories > * {
+  margin-bottom: 8px;
+}
+
+#homepage_layout .homepage__categories a {
+  display: block;
+  padding: 2px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+}
+
+#homepage_layout .homepage__categories a:hover {
+  background-color: var(--border);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: 600;
+  font-size: large;
 }

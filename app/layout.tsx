@@ -2,6 +2,7 @@ import { ButtonIcon } from "@/ui";
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import Link from "next/link";
+import NextTopLoader from "nextjs-toploader";
 import { Search } from "./components/search";
 import "./globals.css";
 
@@ -33,6 +34,7 @@ export default function RootLayout({
         suppressHydrationWarning={false}
         className={`${geistSans.variable} ${geistMono.variable} antialiased `}
       >
+        <NextTopLoader />
         <header id="app-header">
           <Link href={"/"}>
             <ButtonIcon icon="home" />

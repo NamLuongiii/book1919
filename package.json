@@ -21,6 +21,7 @@
     "firebase": "^11.0.2",
     "firebase-admin": "^13.0.0",
     "next": "15.0.2",
+    "nextjs-toploader": "^3.7.15",
     "rc-resize-observer": "^1.4.0",
     "react": "19.0.0-rc-02c0e824-20241028",
     "react-dom": "19.0.0-rc-02c0e824-20241028",

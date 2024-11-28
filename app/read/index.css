@@ -13,7 +13,7 @@
 }
 
 #viewer.spreads {
-  height: 650px;
+  height: 600px;
   box-shadow: 0 0 4px #ccc;
   border-radius: 5px;
   padding: 0;
@@ -277,8 +277,8 @@ svg {
 .panel {
   margin-top: 8px;
   background-color: white;
-  border: 1px solid;
-  width: 300px;
+  border: 1px solid var(--border);
+  width: 400px;
   max-height: 60vh;
 }
 
@@ -308,15 +308,15 @@ svg {
 
 #read-header {
   position: relative;
-  border: 1px solid;
 }
 
 .current-nav {
   position: absolute;
-  top: 4px;
   left: 50%;
-  transform: translateX(-50%);
+  top: 50%;
+  transform: translate(-50%, -50%);
   z-index: 10;
+  text-align: center;
 }
 
 #location {
