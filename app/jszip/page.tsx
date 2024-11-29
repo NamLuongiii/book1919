@@ -18,10 +18,8 @@ export default function JsZip(props: Props) {
 
     // Đọc file EPUB
     const epub = await JSZip.loadAsync(blob);
+    const content = await epub.file("OPS/package.opf")?.async("string");
 
-    console.log(epub.files);
-
-    const content = await epub.file("OPS/chapter_005.xhtml")?.async("string");
     const test_ele = document.getElementById("test");
     if (test_ele) test_ele.innerHTML = content ?? "";
   };
