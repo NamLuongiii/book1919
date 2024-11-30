@@ -3,6 +3,7 @@
 import JSZip from "jszip";
 import { useEffect } from "react";
 import "./index.css";
+import { getFullPath } from "./path";
 
 interface Props {}
 
@@ -12,9 +13,18 @@ const url =
 export default function JsZip(props: Props) {
   useEffect(() => {
     load();
+
+    // test function
+    // console.log(1, getFullPath("abc.com", "OEBPS/book.dop"));
+    // console.log(2, getFullPath("../../STYLES/index.css", "OEBPS/book.dop"));
+    // console.log(3, getFullPath("./STYLES/index.css", "book.dop"));
   });
 
   const load = async () => {
+    const container = document.getElementById("test");
+    if (!container) throw "no dom container";
+    container.innerHTML = "";
+
     const res = await fetch(url);
     const blob = await res.blob();
 
@@ -57,9 +67,10 @@ export default function JsZip(props: Props) {
 
     const itemrefs = spine_node.querySelectorAll("itemref");
 
-    // display spine items
-    itemrefs.forEach(async (itemref, i) => {
-      if (i > 5) return;
+    // render spine item with index
+    const render = async (index: number) => {
+      const itemref = itemrefs[index];
+      if (!itemref) throw "index error";
 
       const idref = itemref.getAttribute("idref");
       if (!idref) throw "idref not found in ";
@@ -67,10 +78,14 @@ export default function JsZip(props: Props) {
       const manifest_item = opf_document.getElementById(idref);
       if (!manifest_item) throw "manifest item not found in " + idref;
 
-      const absolute_href = "OEBPS/" + manifest_item.getAttribute("href");
-      const media_type = manifest_item.getAttribute("media-type");
+      const absolute_href = getFullPath(
+        manifest_item.getAttribute("href") ?? "",
+        rootfile.full_path ?? ""
+      );
 
-      console.log(1, media_type);
+      console.log(absolute_href);
+
+      const media_type = manifest_item.getAttribute("media-type");
 
       // render
       if (media_type == "image/jpeg") {
@@ -106,19 +121,50 @@ export default function JsZip(props: Props) {
           const xlink_href = img.getAttribute("xlink:href");
 
           if (xlink_href) {
-            const absolute_href = "OEBPS/" + xlink_href;
-            const blob = await epub.file(absolute_href)?.async("blob");
+            const full_path_href = getFullPath(xlink_href, absolute_href);
+            const blob = await epub.file(full_path_href)?.async("blob");
             if (!blob) throw "image not found";
 
             img.setAttribute("xlink:href", URL.createObjectURL(blob));
           }
         });
 
-        const test_ele = document.getElementById("test");
-        if (test_ele) test_ele.appendChild(chapter_document.documentElement);
+        container.appendChild(chapter_document.documentElement);
       }
-    });
+    };
+
+    // display spine items
+    let index = 0;
+    render(index);
+
+    const next = document.getElementById("next");
+    if (!next) throw "no next element";
+
+    next.onclick = () => {
+      if (index + 1 < itemrefs.length) {
+        container.innerHTML = "";
+        index++;
+        render(index);
+      }
+    };
+
+    const prev = document.getElementById("prev");
+    if (!prev) throw "no prev element";
+
+    prev.onclick = () => {
+      if (index - 1 >= 0) {
+        container.innerHTML = "";
+        index--;
+        render(index);
+      }
+    };
   };
 
-  return <div id="test"></div>;
+  return (
+    <div>
+      <div id="test"></div>
+      <button id="prev">Quay lại</button>
+      <button id="next">Chương tiếp theo</button>
+    </div>
+  );
 }
