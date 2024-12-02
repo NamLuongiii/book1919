@@ -1,6 +1,10 @@
 "use client";
 
+import { Popover } from "@headlessui/react";
+import { useScrollPosition } from "@n8tb1t/use-scroll-position";
+import clsx from "clsx";
 import JSZip from "jszip";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import "./index.css";
 import { getFullPath } from "./path";
@@ -11,6 +15,22 @@ const url =
   "https://firebasestorage.googleapis.com/v0/b/app-2024-63e00.firebasestorage.app/o/0f52a9be-a0ec-4138-b3f4-b2848c19e628_alice%20(3).epub?alt=media&token=a6c1ed1e-dd19-494b-af51-fb01546ebf61";
 
 export default function JsZip(props: Props) {
+  const router = useRouter();
+  const sp = useSearchParams();
+
+  // show / hide header
+  useScrollPosition(({ prevPos, currPos }) => {
+    const h = document.getElementById("reading-system__header");
+    if (!h) return;
+
+    if (prevPos.y < currPos.y) {
+      // show
+      h.style.display = "block";
+    } else {
+      h.style.display = "none";
+    }
+  });
+
   useEffect(() => {
     load();
 
@@ -21,7 +41,9 @@ export default function JsZip(props: Props) {
   });
 
   const load = async () => {
-    const container = document.getElementById("test");
+    const container = document.getElementById(
+      "test"
+    ) as HTMLIFrameElement | null;
     if (!container) throw "no dom container";
     container.innerHTML = "";
 
@@ -83,7 +105,7 @@ export default function JsZip(props: Props) {
         rootfile.full_path ?? ""
       );
 
-      console.log(absolute_href);
+      if (!absolute_href) throw "no base path";
 
       const media_type = manifest_item.getAttribute("media-type");
 
@@ -114,6 +136,8 @@ export default function JsZip(props: Props) {
           media_type
         );
 
+        console.log(chapter_document);
+
         // modify image src
         const images =
           chapter_document.documentElement.querySelectorAll("image");
@@ -129,13 +153,143 @@ export default function JsZip(props: Props) {
           }
         });
 
-        container.appendChild(chapter_document.documentElement);
+        chapter_document.documentElement.style.fontSize = "20px";
+        chapter_document.documentElement.style.wordSpacing = "4px";
+
+        const doc = container.contentWindow?.document;
+        if (doc) {
+          doc.open();
+          doc.write(chapter_document.documentElement.outerHTML);
+          doc.close();
+
+          const content_height = doc.querySelector("html")?.scrollHeight;
+          container.style.height = content_height + "px";
+        }
+      }
+    };
+
+    // render navigation: only support epub 3.3
+    const renderNavigation = async () => {
+      // parse file
+      const base_path = rootfile.full_path;
+      if (!base_path) throw "opf not found";
+
+      const nav_item = opf_document.querySelector("item[properties=nav]");
+
+      if (!nav_item) throw "file not support anv item";
+
+      const href = nav_item.getAttribute("href");
+      const media_type = nav_item.getAttribute("media-type");
+
+      if (!href || !media_type) throw "toc item data not found";
+
+      const base_path2 = getFullPath(href, base_path);
+      const content = await epub.file(base_path2)?.async("string");
+      if (!content) throw "blob file failed";
+
+      const toc_document = parser.parseFromString(
+        content,
+        "application/xhtml+xml"
+      );
+
+      // render nav data
+      const nav = toc_document.querySelector("nav");
+      if (!nav) throw "nav element not found";
+
+      const ol = nav.firstElementChild;
+
+      // de quy lay data
+      interface Item {
+        href?: string | null;
+        id?: string | null;
+        label?: string | null;
+        items?: Item[];
+      }
+
+      const getData = (ol: HTMLOListElement): Item[] => {
+        const lis = ol.children;
+
+        let navigation_data: Item[] = [];
+
+        for (const li of lis) {
+          let data: Item = {};
+          const a = li.querySelector(":scope > a");
+          const span = li.querySelector(":scope > span");
+
+          if (a) {
+            data["id"] = a.getAttribute("id");
+            data["href"] = getFullPath(
+              a.getAttribute("href") ?? "",
+              base_path2
+            );
+            data["label"] = a.textContent;
+          } else if (span) {
+            data["id"] = span.getAttribute("id");
+            data["label"] = span.textContent;
+          }
+
+          const child_ol = li.querySelector(":scope > ol");
+
+          if (child_ol) {
+            data["items"] = getData(child_ol as HTMLOListElement);
+          }
+
+          navigation_data.push(data);
+        }
+
+        return navigation_data;
+      };
+
+      // render data
+      if (ol) {
+        const data = getData(ol as HTMLOListElement);
+
+        const render = (data: Item[]) => {
+          const ol = document.createElement("ol");
+          ol.id = "table-of-contents";
+
+          for (let i = 0; i < data.length; i++) {
+            const element = data[i];
+
+            const li = document.createElement("li");
+            let first;
+
+            if (element.href) {
+              first = document.createElement("p");
+              first.onclick = async () => {};
+              if (element.id) first.id = element.id;
+              if (element.label) first.innerText = element.label;
+            } else {
+              first = document.createElement("strong");
+              if (element.id) first.id = element.id;
+              if (element.label) first.innerText = element.label;
+            }
+
+            li.appendChild(first);
+
+            if (element.items) {
+              li.appendChild(render(element.items));
+            }
+
+            ol.appendChild(li);
+          }
+
+          return ol;
+        };
+
+        const _ol = render(data);
+
+        const navigation = document.getElementById("navigation");
+        if (navigation) navigation.appendChild(_ol);
       }
     };
 
     // display spine items
-    let index = 0;
+    let index = sp.get("i") ? Number(sp.get("i")) : 0;
     render(index);
+
+    // render navigation
+    renderNavigation();
 
     const next = document.getElementById("next");
     if (!next) throw "no next element";
@@ -145,6 +299,7 @@ export default function JsZip(props: Props) {
         container.innerHTML = "";
         index++;
         render(index);
+        router.push("?i=" + index);
       }
     };
 
@@ -156,15 +311,36 @@ export default function JsZip(props: Props) {
         container.innerHTML = "";
         index--;
         render(index);
+        router.push("?i=" + index);
       }
     };
   };
 
   return (
     <div>
-      <div id="test"></div>
+      <header id="reading-system__header">
+        <Popover popoverTarget="target">
+          {({ open }) => (
+            <>
+              <Popover.Button>Open Popover</Popover.Button>
+              <Popover.Panel
+                static
+                className={clsx(
+                  open ? "block" : "hidden",
+                  "p-4 bg-gray-100 border rounded absolute z-10000"
+                )}
+              >
+                <h1>Table of contents</h1>
+                <div id="navigation"></div>
+              </Popover.Panel>
+            </>
+          )}
+        </Popover>
+      </header>
+      <iframe id="test" seamless></iframe>
       <button id="prev">Quay lại</button>
       <button id="next">Chương tiếp theo</button>
+      <div id="target"></div>
     </div>
   );
 }
