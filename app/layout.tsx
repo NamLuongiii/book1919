@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import Link from "next/link";
 import NextTopLoader from "nextjs-toploader";
+import { Suspense } from "react";
 import { Search } from "./components/search";
 import "./globals.css";
 
@@ -42,7 +43,7 @@ export default function RootLayout({
 
           <Search />
         </header>
-        {children}
+        <Suspense>{children}</Suspense>
       </body>
     </html>
   );

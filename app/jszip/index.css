@@ -1,11 +1,6 @@
 #test {
   width: 100%;
-}
-
-#test html {
-  font-size: 20px;
-  word-spacing: 4px;
-  line-height: 2rem;
+  margin-top: 80px;
 }
 
 #prev,
