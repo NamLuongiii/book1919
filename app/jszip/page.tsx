@@ -7,7 +7,7 @@ import JSZip from "jszip";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import "./index.css";
-import { getFullPath } from "./path";
+import { getFullPath, isRelative } from "./path";
 
 interface Props {}
 
@@ -33,12 +33,124 @@ export default function JsZip(props: Props) {
 
   useEffect(() => {
     load();
-
-    // test function
-    // console.log(1, getFullPath("abc.com", "OEBPS/book.dop"));
-    // console.log(2, getFullPath("../../STYLES/index.css", "OEBPS/book.dop"));
-    // console.log(3, getFullPath("./STYLES/index.css", "book.dop"));
   });
+
+  const displayNavigation = async (epub: JSZip, root: string) => {
+    // parse file
+    const parser = new DOMParser();
+    const base_path = root;
+    if (!base_path) throw "opf not found";
+
+    const opf_content = await epub.file(root)?.async("string");
+    if (!opf_content) throw "no opf";
+    const opf_document = parser.parseFromString(opf_content, "application/xml");
+
+    const nav_item = opf_document.querySelector("item[properties=nav]");
+
+    if (!nav_item) throw "file not support anv item";
+
+    const href = nav_item.getAttribute("href");
+    const media_type = nav_item.getAttribute("media-type");
+
+    if (!href || !media_type) throw "toc item data not found";
+
+    const base_path2 = getFullPath(href, base_path);
+    const content = await epub.file(base_path2)?.async("string");
+    if (!content) throw "blob file failed";
+
+    const toc_document = parser.parseFromString(
+      content,
+      "application/xhtml+xml"
+    );
+
+    // render nav data
+    const nav = toc_document.querySelector("nav");
+    if (!nav) throw "nav element not found";
+
+    const ol = nav.firstElementChild;
+
+    // de quy lay data
+    interface Item {
+      href?: string | null;
+      id?: string | null;
+      label?: string | null;
+      items?: Item[];
+    }
+
+    const getData = (ol: HTMLOListElement): Item[] => {
+      const lis = ol.children;
+
+      let navigation_data: Item[] = [];
+
+      for (const li of lis) {
+        let data: Item = {};
+        const a = li.querySelector(":scope > a");
+        const span = li.querySelector(":scope > span");
+
+        if (a) {
+          data["id"] = a.getAttribute("id");
+          data["href"] = getFullPath(a.getAttribute("href") ?? "", base_path2);
+          data["label"] = a.textContent;
+        } else if (span) {
+          data["id"] = span.getAttribute("id");
+          data["label"] = span.textContent;
+        }
+
+        const child_ol = li.querySelector(":scope > ol");
+
+        if (child_ol) {
+          data["items"] = getData(child_ol as HTMLOListElement);
+        }
+
+        navigation_data.push(data);
+      }
+
+      return navigation_data;
+    };
+
+    // render data
+    if (ol) {
+      const data = getData(ol as HTMLOListElement);
+
+      const render = (data: Item[]) => {
+        const ol = document.createElement("ol");
+        ol.id = "table-of-contents";
+
+        for (let i = 0; i < data.length; i++) {
+          const element = data[i];
+
+          const li = document.createElement("li");
+          let first;
+
+          if (element.href) {
+            first = document.createElement("p");
+            first.onclick = async () => {};
+            if (element.id) first.id = element.id;
+            if (element.label) first.innerText = element.label;
+          } else {
+            first = document.createElement("strong");
+            if (element.id) first.id = element.id;
+            if (element.label) first.innerText = element.label;
+          }
+
+          li.appendChild(first);
+
+          if (element.items) {
+            li.appendChild(render(element.items));
+          }
+
+          ol.appendChild(li);
+        }
+
+        return ol;
+      };
+
+      const _ol = render(data);
+
+      const navigation = document.getElementById("navigation");
+      if (navigation) navigation.appendChild(_ol);
+    }
+  };
 
   const load = async () => {
     const container = document.getElementById(
@@ -52,7 +164,11 @@ export default function JsZip(props: Props) {
 
     // Đọc file EPUB
     const epub = await JSZip.loadAsync(blob);
-    console.log(epub);
+
+    const files: string[] = [];
+    epub.forEach((d) => {
+      files.push(d);
+    });
 
     const content = await epub.file("META-INF/container.xml")?.async("string");
 
@@ -76,7 +192,7 @@ export default function JsZip(props: Props) {
     if (!opf_content) throw "no opf";
     const opf_document = parser.parseFromString(opf_content, "application/xml");
 
-    console.log(opf_document.documentElement);
+    displayNavigation(epub, rootfile.full_path);
 
     // manifest
     const manifest_node =
@@ -84,30 +200,47 @@ export default function JsZip(props: Props) {
     if (!manifest_node) throw "not found manifest tag";
 
     // spine
-    const spine_node = opf_document.documentElement.querySelector("spine");
-    if (!spine_node) throw "not found spine tag";
+    const spine = opf_document.documentElement.querySelector("spine");
+    if (!spine) throw "not found spine tag";
+    const spine_items = spine.querySelectorAll("itemref");
 
-    const itemrefs = spine_node.querySelectorAll("itemref");
+    const root_document = opf_document;
+    const root_path = rootfile.full_path ?? "";
 
     // render spine item with index
-    const render = async (index: number) => {
-      const itemref = itemrefs[index];
-      if (!itemref) throw "index error";
+    const render = async (index: number | string) => {
+      let path: string;
+      let media_type: string;
 
-      const idref = itemref.getAttribute("idref");
-      if (!idref) throw "idref not found in ";
-      // find item in manifest
-      const manifest_item = opf_document.getElementById(idref);
-      if (!manifest_item) throw "manifest item not found in " + idref;
+      // index in spine
+      if (typeof index == "number") {
+        const item = spine_items[index];
+        if (!item) throw "index not found";
 
-      const absolute_href = getFullPath(
-        manifest_item.getAttribute("href") ?? "",
-        rootfile.full_path ?? ""
-      );
+        const id = item.getAttribute("idref");
+        const manifest_item = root_document.getElementById(id ?? "");
+        if (!manifest_item) throw "id not found in manifest";
+        const href = manifest_item.getAttribute("href");
 
-      if (!absolute_href) throw "no base path";
+        path = getFullPath(href ?? "", root_path);
+        const _media_type = manifest_item.getAttribute("media-type");
+        if (!_media_type) throw "not found media type";
+        media_type = _media_type;
+      } else {
+        path = index; // full path
 
-      const media_type = manifest_item.getAttribute("media-type");
+        if (!files.includes(path)) {
+          path = files.find((p) => path.startsWith(p)) ?? "";
+        }
+
+        if (!path) throw "document path not found";
+
+        if (path.includes("xhtml")) {
+          media_type = "application/xhtml+xml";
+        } else {
+          media_type = "";
+        }
+      }
 
       // render
       if (media_type == "image/jpeg") {
@@ -116,7 +249,7 @@ export default function JsZip(props: Props) {
           .file("OEBPS/9171285112962905380_cover.jpg")
           ?.async("blob");
 
-        if (!blob) throw "blob undefined for" + absolute_href;
+        if (!blob) throw "blob undefined for" + path;
 
         const img = document.createElement("img");
         img.src = URL.createObjectURL(blob);
@@ -130,33 +263,50 @@ export default function JsZip(props: Props) {
       }
 
       if (media_type == "application/xhtml+xml") {
-        const chapter_content = await epub.file(absolute_href)?.async("string");
+        const chapter_content = await epub.file(path)?.async("string");
         const chapter_document = parser.parseFromString(
           chapter_content ?? "",
           media_type
         );
 
-        console.log(chapter_document);
+        // modify style src
+        const styles = chapter_document.documentElement.querySelectorAll(
+          'link[rel="stylesheet"]'
+        );
+        for (const style of styles) {
+          const href = style.getAttribute("href");
+          if (href) {
+            const css_path = getFullPath(href, path);
+
+            const content = await epub.file(css_path)?.async("string");
+            if (!content) return;
+            const styleTag = chapter_document.createElement("style");
+            styleTag.textContent = content; // Thêm nội dung CSS
+            // Thay thế thẻ <link> bằng thẻ <style>
+            style.replaceWith(styleTag);
+          }
+        }
 
         // modify image src
         const images =
           chapter_document.documentElement.querySelectorAll("image");
-        images.forEach(async (img) => {
+        for (const img of images) {
           const xlink_href = img.getAttribute("xlink:href");
 
           if (xlink_href) {
-            const full_path_href = getFullPath(xlink_href, absolute_href);
+            const full_path_href = getFullPath(xlink_href, path);
             const blob = await epub.file(full_path_href)?.async("blob");
             if (!blob) throw "image not found";
 
             img.setAttribute("xlink:href", URL.createObjectURL(blob));
           }
-        });
+        }
 
         chapter_document.documentElement.style.fontSize = "20px";
         chapter_document.documentElement.style.wordSpacing = "4px";
 
         const doc = container.contentWindow?.document;
+
         if (doc) {
           doc.open();
           doc.write(chapter_document.documentElement.outerHTML);
@@ -164,123 +314,72 @@ export default function JsZip(props: Props) {
 
           const content_height = doc.querySelector("html")?.scrollHeight;
           container.style.height = content_height + "px";
-        }
-      }
-    };
 
-    // render navigation: only support epub 3.3
-    const renderNavigation = async () => {
-      // parse file
-      const base_path = rootfile.full_path;
-      if (!base_path) throw "opf not found";
-
-      const nav_item = opf_document.querySelector("item[properties=nav]");
-
-      if (!nav_item) throw "file not support anv item";
-
-      const href = nav_item.getAttribute("href");
-      const media_type = nav_item.getAttribute("media-type");
-
-      if (!href || !media_type) throw "toc item data not found";
-
-      const base_path2 = getFullPath(href, base_path);
-      const content = await epub.file(base_path2)?.async("string");
-      if (!content) throw "blob file failed";
-
-      const toc_document = parser.parseFromString(
-        content,
-        "application/xhtml+xml"
-      );
-
-      // render nav data
-      const nav = toc_document.querySelector("nav");
-      if (!nav) throw "nav element not found";
-
-      const ol = nav.firstElementChild;
-
-      // de quy lay data
-      interface Item {
-        href?: string | null;
-        id?: string | null;
-        label?: string | null;
-        items?: Item[];
-      }
-
-      const getData = (ol: HTMLOListElement): Item[] => {
-        const lis = ol.children;
-
-        let navigation_data: Item[] = [];
-
-        for (const li of lis) {
-          let data: Item = {};
-          const a = li.querySelector(":scope > a");
-          const span = li.querySelector(":scope > span");
-
-          if (a) {
-            data["id"] = a.getAttribute("id");
-            data["href"] = getFullPath(
-              a.getAttribute("href") ?? "",
-              base_path2
-            );
-            data["label"] = a.textContent;
-          } else if (span) {
-            data["id"] = span.getAttribute("id");
-            data["label"] = span.textContent;
-          }
-
-          const child_ol = li.querySelector(":scope > ol");
-
-          if (child_ol) {
-            data["items"] = getData(child_ol as HTMLOListElement);
-          }
-
-          navigation_data.push(data);
-        }
-
-        return navigation_data;
-      };
-
-      // render data
-      if (ol) {
-        const data = getData(ol as HTMLOListElement);
-
-        const render = (data: Item[]) => {
-          const ol = document.createElement("ol");
-          ol.id = "table-of-contents";
-
-          for (let i = 0; i < data.length; i++) {
-            const element = data[i];
-
-            const li = document.createElement("li");
-            let first;
-
-            if (element.href) {
-              first = document.createElement("p");
-              first.onclick = async () => {};
-              if (element.id) first.id = element.id;
-              if (element.label) first.innerText = element.label;
+          // modify a tag
+          const links = doc.querySelectorAll("a");
+          for (const link of links) {
+            const href = link.getAttribute("href");
+            if (!href) continue;
+            if (isRelative(href)) {
+              link.onclick = (e) => {
+                e.preventDefault();
+                const full_path = getFullPath(href, path);
+                render(full_path);
+              };
             } else {
-              first = document.createElement("strong");
-              if (element.id) first.id = element.id;
-              if (element.label) first.innerText = element.label;
+              link.setAttribute("target", "_blank");
             }
-
-            li.appendChild(first);
-
-            if (element.items) {
-              li.appendChild(render(element.items));
-            }
-
-            ol.appendChild(li);
           }
 
-          return ol;
-        };
+          // caculate cfi
+          const cfi = document.getElementById("cfi");
+          if (!cfi) throw "no cfi";
 
-        const _ol = render(data);
+          const traveling = (element: Element, count?: number): string => {
+            const rect = element.getBoundingClientRect();
+            const iframeRect = container.getBoundingClientRect();
 
-        const navigation = document.getElementById("navigation");
-        if (navigation) navigation.appendChild(_ol);
+            const elementViewportPosition = {
+              top: iframeRect.top + rect.top,
+              left: iframeRect.left + rect.left,
+              bottom: iframeRect.top + rect.bottom,
+              right: iframeRect.left + rect.right,
+            };
+
+            // not visible => end
+            if (
+              elementViewportPosition.bottom <= 0 ||
+              elementViewportPosition.top >= window.innerHeight
+            ) {
+              return "";
+            } // end
+
+            if (!element.childElementCount) {
+              console.log(element);
+              return count + "";
+            }
+
+            let segment = count + "";
+
+            const childrens = Array.from(element.children);
+            for (let i = 0; i < childrens.length; i++) {
+              const child = childrens[i];
+
+              const r = traveling(child, i);
+              if (r) {
+                segment += `:${r}`;
+                break;
+              }
+            }
+
+            return segment;
+          };
+
+          cfi.onclick = () => {
+            const p = traveling(doc.documentElement, 0);
+            console.log(p);
+          };
+        }
       }
     };
 
@@ -288,28 +387,21 @@ export default function JsZip(props: Props) {
     let index = sp.get("i") ? Number(sp.get("i")) : 0;
     render(index);
 
-    // render navigation
-    renderNavigation();
+    let next = document.getElementById("next");
+    if (!next) {
+      next = document.createElement("button");
+      next.id = "next";
+      next.innerText = "Chương tiếp theo";
 
-    const next = document.getElementById("next");
-    if (!next) throw "no next element";
+      const rs = document.getElementById("reading-sytem");
+      if (!rs) throw "rs next element";
+      rs.appendChild(next);
+    }
 
     next.onclick = () => {
-      if (index + 1 < itemrefs.length) {
+      if (index + 1 < spine_items.length) {
         container.innerHTML = "";
         index++;
-        render(index);
-        router.push("?i=" + index);
-      }
-    };
-
-    const prev = document.getElementById("prev");
-    if (!prev) throw "no prev element";
-
-    prev.onclick = () => {
-      if (index - 1 >= 0) {
-        container.innerHTML = "";
-        index--;
         render(index);
         router.push("?i=" + index);
       }
@@ -317,9 +409,9 @@ export default function JsZip(props: Props) {
   };
 
   return (
-    <div>
+    <div id="reading-sytem">
       <header id="reading-system__header">
-        <Popover popoverTarget="target">
+        <Popover>
           {({ open }) => (
             <>
               <Popover.Button>Open Popover</Popover.Button>
@@ -337,10 +429,10 @@ export default function JsZip(props: Props) {
           )}
         </Popover>
       </header>
-      <iframe id="test" seamless></iframe>
-      <button id="prev">Quay lại</button>
-      <button id="next">Chương tiếp theo</button>
-      <div id="target"></div>
+      <iframe id="test"></iframe>
+      <button id="cfi" className="fixed top-24 left-10">
+        get visible element
+      </button>
     </div>
   );
 }

@@ -31,4 +31,8 @@ function getFullPath(path: string, relative_path: string) {
   return levels.join("/") + full_path;
 }
 
-export { getFullPath };
+function isRelative(path: string) {
+  return !path.startsWith("http://") && !path.startsWith("https://");
+}
+
+export { getFullPath, isRelative };

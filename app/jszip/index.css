@@ -3,6 +3,11 @@
   margin-top: 80px;
 }
 
+#test body {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
 #prev,
 #next {
   border: 1px solid var(--border);
@@ -19,4 +24,13 @@
   margin: 0 auto;
   padding: 8px;
   border: 1px solid var(--border);
+}
+
+#next {
+  border-radius: 12px;
+  padding: 8px 32px;
+  background-color: coral;
+  color: white;
+  display: block;
+  margin: 24px auto;
 }
