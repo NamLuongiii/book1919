@@ -174,6 +174,8 @@ export default function JsZip(props: Props) {
     // Đọc file EPUB
     const epub = await JSZip.loadAsync(blob);
 
+    console.log(epub);
+
     const files: string[] = [];
     epub.forEach((d) => {
       files.push(d);
