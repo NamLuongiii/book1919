@@ -8,6 +8,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import "./index.css";
 import { getFullPath, isRelative } from "./path";
+import { wait } from "./wait";
 
 interface Props {}
 
@@ -31,8 +32,16 @@ export default function JsZip(props: Props) {
     }
   });
 
+  // save position
+
   useEffect(() => {
-    load();
+    const removeListener = load();
+
+    return () => {
+      removeListener.then((remove) => {
+        remove();
+      });
+    };
   });
 
   const displayNavigation = async (epub: JSZip, root: string) => {
@@ -207,10 +216,13 @@ export default function JsZip(props: Props) {
     const root_document = opf_document;
     const root_path = rootfile.full_path ?? "";
 
+    let rendered_path: string;
+
     // render spine item with index
     const render = async (index: number | string) => {
       let path: string;
       let media_type: string;
+      let position: string = "";
 
       // index in spine
       if (typeof index == "number") {
@@ -227,7 +239,8 @@ export default function JsZip(props: Props) {
         if (!_media_type) throw "not found media type";
         media_type = _media_type;
       } else {
-        path = index; // full path
+        path = index.split("!")[0];
+        position = index.split("!")[1];
 
         if (!files.includes(path)) {
           path = files.find((p) => path.startsWith(p)) ?? "";
@@ -330,62 +343,35 @@ export default function JsZip(props: Props) {
               link.setAttribute("target", "_blank");
             }
           }
+        }
 
-          // caculate cfi
-          const cfi = document.getElementById("cfi");
-          if (!cfi) throw "no cfi";
+        // scroll to position
+        const body = doc?.querySelector("body");
+        if (!body) throw "body not found";
 
-          const traveling = (element: Element, count?: number): string => {
-            const rect = element.getBoundingClientRect();
-            const iframeRect = container.getBoundingClientRect();
+        if (position) {
+          const ps = position.split(":").map((v) => Number(v));
+          let target: Element[] = [body];
+          let final_element;
 
-            const elementViewportPosition = {
-              top: iframeRect.top + rect.top,
-              left: iframeRect.left + rect.left,
-              bottom: iframeRect.top + rect.bottom,
-              right: iframeRect.left + rect.right,
-            };
+          for (let i = 0; i < ps.length; i++) {
+            const p = ps[i];
+            final_element = target[p];
+            target = Array.from(final_element.children);
+          }
 
-            // not visible => end
-            if (
-              elementViewportPosition.bottom <= 0 ||
-              elementViewportPosition.top >= window.innerHeight
-            ) {
-              return "";
-            } // end
-
-            if (!element.childElementCount) {
-              console.log(element);
-              return count + "";
-            }
-
-            let segment = count + "";
-
-            const childrens = Array.from(element.children);
-            for (let i = 0; i < childrens.length; i++) {
-              const child = childrens[i];
-
-              const r = traveling(child, i);
-              if (r) {
-                segment += `:${r}`;
-                break;
-              }
-            }
-
-            return segment;
-          };
-
-          cfi.onclick = () => {
-            const p = traveling(doc.documentElement, 0);
-            console.log(p);
-          };
+          if (final_element) {
+            final_element.scrollIntoView();
+          }
         }
       }
+
+      rendered_path = path;
     };
 
     // display spine items
-    let index = sp.get("i") ? Number(sp.get("i")) : 0;
-    render(index);
+    let r = localStorage.getItem("r");
+    render(r ?? 2);
 
     let next = document.getElementById("next");
     if (!next) {
@@ -395,17 +381,85 @@ export default function JsZip(props: Props) {
 
       const rs = document.getElementById("reading-sytem");
       if (!rs) throw "rs next element";
-      rs.appendChild(next);
+      setTimeout(() => {
+        if (next) rs.appendChild(next);
+      }, 2000);
     }
 
     next.onclick = () => {
-      if (index + 1 < spine_items.length) {
-        container.innerHTML = "";
-        index++;
-        render(index);
-        router.push("?i=" + index);
-      }
+      // if (index + 1 < spine_items.length) {
+      //   container.innerHTML = "";
+      //   index++;
+      //   render(index);
+      //   router.push("?i=" + index);
+      // }
     };
+
+    const check = () => {
+      wait(() => {
+        const container = document.getElementById(
+          "test"
+        ) as HTMLIFrameElement | null;
+        if (!container) throw "no dom container";
+        container.innerHTML = "";
+
+        const iframe_document = container.contentWindow?.document;
+        const body = iframe_document?.querySelector("body");
+        if (!body) throw "body not found";
+        const p = traveling(body, 0);
+        localStorage.setItem("r", `${rendered_path}!${p}`);
+      });
+    };
+
+    document.addEventListener("scroll", check);
+
+    return () => document.removeEventListener("scroll", check);
+  };
+
+  const traveling = (element: Element, count?: number): string => {
+    const container = document.getElementById(
+      "test"
+    ) as HTMLIFrameElement | null;
+    if (!container) throw "no dom container";
+    container.innerHTML = "";
+
+    const rect = element.getBoundingClientRect();
+    const iframeRect = container.getBoundingClientRect();
+
+    const elementViewportPosition = {
+      top: iframeRect.top + rect.top,
+      left: iframeRect.left + rect.left,
+      bottom: iframeRect.top + rect.bottom,
+      right: iframeRect.left + rect.right,
+    };
+
+    // not visible => end
+    if (
+      elementViewportPosition.bottom <= 0 ||
+      elementViewportPosition.top >= window.innerHeight
+    ) {
+      return "";
+    } // end
+
+    if (!element.childElementCount) {
+      console.log(element);
+      return count + "";
+    }
+
+    let segment = count + "";
+
+    const childrens = Array.from(element.children);
+    for (let i = 0; i < childrens.length; i++) {
+      const child = childrens[i];
+
+      const r = traveling(child, i);
+      if (r) {
+        segment += `:${r}`;
+        break;
+      }
+    }
+
+    return segment;
   };
 
   return (
@@ -430,9 +484,6 @@ export default function JsZip(props: Props) {
         </Popover>
       </header>
       <iframe id="test"></iframe>
-      <button id="cfi" className="fixed top-24 left-10">
-        get visible element
-      </button>
     </div>
   );
 }
