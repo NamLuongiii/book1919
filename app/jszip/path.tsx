@@ -35,4 +35,59 @@ function isRelative(path: string) {
   return !path.startsWith("http://") && !path.startsWith("https://");
 }
 
-export { getFullPath, isRelative };
+function parse(path: string, base: string) {
+  // ../../../../abc
+  // ./abc
+  // abc
+  // /abc
+
+  if (path.startsWith("http://") || path.startsWith("https://")) return path;
+
+  // search param
+  // hash
+  let hash = undefined;
+  let search = undefined;
+  let _path = path;
+
+  if (path.includes("#")) {
+    const s = path.split("#");
+    hash = s.pop();
+    _path = s.join();
+  }
+
+  if (path.includes("?")) {
+    const s = _path?.split("?");
+    search = s[1];
+    _path = s.join();
+  }
+
+  if (base.includes("#") || base.includes("?")) throw "invalid base url";
+
+  const s = _path.split("/");
+  const b_s = base.split("/");
+  b_s.pop();
+
+  for (let i = 0; i < s.length; i++) {
+    const segment = s[i];
+
+    switch (segment) {
+      case "..":
+        b_s.pop();
+        break;
+      case ".":
+      case "":
+        break;
+      default:
+        b_s.push(segment);
+        break;
+    }
+  }
+
+  return {
+    path: b_s.join("/"),
+    hash,
+    search,
+  };
+}
+
+export { getFullPath, isRelative, parse };
